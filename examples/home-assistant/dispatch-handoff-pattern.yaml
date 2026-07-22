@@ -1,0 +1,50 @@
+# Worked example accompanying skills/home-security-engineering/references/home-assistant-integration-patterns.md
+#
+# Illustrates the core architectural recommendation from that reference: a dispatch integration
+# should hand off from the *generic* alarm_control_panel domain's "triggered" state, not from any
+# one backend's internals. This same automation pattern works unmodified whether the arm-state
+# logic underneath is the built-in `manual` platform, Alarmo, or a bridged physical panel
+# (envisalink/AlarmDecoder) -- because all three implement the same alarm_control_panel contract.
+#
+# This is a prototyping-level illustration, not the real dispatch-decision component: an actual
+# 911-dispatch integration belongs in a custom_component with its own verification/corroboration
+# state machine (see references/dispatch-integration.md), not a single automation that calls 911.
+# What this automation produces is a *candidate* dispatch event for that component to evaluate --
+# never itself sufficient justification to escalate.
+
+automation:
+  - alias: "Dispatch handoff - candidate event on any alarm_control_panel trigger"
+    description: >-
+      Fires whenever any alarm_control_panel entity enters 'triggered', regardless of which
+      integration (manual, Alarmo, a bridged panel) produced that state. Emits an internal event
+      for a dispatch-decision component to pick up and run through its own verification ladder --
+      it does not call any dispatch service directly.
+    trigger:
+      - platform: state
+        # In a real custom_component this would enumerate every alarm_control_panel.* entity
+        # rather than naming one; a single entity_id is used here for a readable example.
+        entity_id: alarm_control_panel.home
+        to: "triggered"
+    action:
+      - event: dispatch_candidate_event
+        event_data:
+          source_entity: "{{ trigger.entity_id }}"
+          triggered_at: "{{ now().isoformat() }}"
+          # Opportunistic extra context: only populated if the backend happens to expose it
+          # (e.g. Alarmo's open-sensor/zone data), per the "pull context, don't require it"
+          # guidance in home-assistant-integration-patterns.md. Left absent for a bridged panel
+          # or the manual platform, which don't expose the same attributes.
+          open_sensors: "{{ state_attr(trigger.entity_id, 'open_sensors') }}"
+
+  - alias: "Dispatch handoff - log candidate events for audit trail"
+    description: "Every candidate event is logged independent of what the decision component does with it -- see the repudiation/audit-trail point in references/threat-modeling.md."
+    trigger:
+      - platform: event
+        event_type: dispatch_candidate_event
+    action:
+      - service: logbook.log
+        data:
+          name: "Dispatch"
+          message: >-
+            Candidate dispatch event from {{ trigger.event.data.source_entity }} at
+            {{ trigger.event.data.triggered_at }}

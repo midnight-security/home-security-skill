@@ -2,15 +2,16 @@
 
 A [Claude Code](https://claude.com/claude-code) skill that gives Claude domain expertise in smart home security engineering — the kind of hard-won, field-specific knowledge that generic instincts tend to get wrong or oversimplify.
 
-It covers five areas:
+It covers six areas:
 
 - **Threat modeling** — separating the physical intruder, adversaries against the system itself (jamming, tampering, spoofing), and adversaries *via* the system (account takeover, insider abuse, data exposure).
 - **Sensor & alarm logic** — false-alarm reduction, multi-sensor fusion, arm/disarm state machines, and Home Assistant implementation patterns.
 - **Emergency dispatch integration** — self-response vs. central monitoring vs. direct-to-911/NG911 architectures, alarm verification levels, and the real (non-technical) requirements behind dispatch integration.
 - **Access control & camera security** — credential types (PIN, RFID/NFC, mobile/BLE, biometric) and their threat profiles, smart lock engineering concerns, and camera/video verification.
 - **Neighborhood crime data integration** — the real access/licensing landscape behind sources like CrimeMapping.com, LexisNexis, CityProtect, and Citizen; legitimate open-data alternatives (FBI CDE, municipal open-data portals); and the bias/fairness risk of crime-score features.
+- **Home Assistant integration patterns** — Alarmo and similar community integrations (envisalink, AlarmDecoder, Konnected) as prior art, and how to architect a dispatch integration against the `alarm_control_panel` domain contract instead of coupling to one backend.
 
-Grounded in real industry standards (CSAA, SIA, UL 827/1023, NFPA 72, RapidSOS/NG911, FBI NIBRS) rather than invented ones, and includes a worked Home Assistant example.
+Grounded in real industry standards (CSAA, SIA, UL 827/1023, NFPA 72, RapidSOS/NG911, FBI NIBRS) rather than invented ones, and includes worked Home Assistant examples.
 
 ## Structure
 
@@ -24,8 +25,10 @@ skills/home-security-engineering/
     dispatch-integration.md
     access-control-and-locks.md
     crime-data-integration.md
+    home-assistant-integration-patterns.md
 examples/home-assistant/
   fused-intrusion-alarm.yaml                         — worked automation implementing the sensor-fusion escalation ladder
+  dispatch-handoff-pattern.yaml                       — domain-not-backend pattern for handing off to a dispatch integration
 .github/workflows/validate.yml                       — CI: validates plugin.json, SKILL.md frontmatter, and example YAML
 ```
 
