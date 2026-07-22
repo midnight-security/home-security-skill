@@ -1,0 +1,23 @@
+{
+  "name": "home-security-skill",
+  "description": "Domain expertise for building smart home security products and systems: threat modeling for connected security devices, sensor/alarm logic and false-alarm reduction, emergency dispatch (911/NG911) integration, access control/smart lock/camera security, and neighborhood crime data integration.",
+  "version": "0.2.0",
+  "author": {
+    "name": "Midnight Security",
+    "url": "https://midnight.security"
+  },
+  "homepage": "https://midnight.security",
+  "repository": "https://github.com/midnightsecurity/home-security-skill",
+  "license": "Apache-2.0",
+  "keywords": [
+    "home-security", "smart-home", "alarm-system", "threat-modeling", "sensor-fusion", "home-assistant", "911", "ng911", "emergency-dispatch", "access-control", "smart-locks", "camera-security", "iot-security", "crime-data", "crime-mapping", "risk-scoring"
+  ],
+  "category": "security",
+  "icon": "https://midnight.security/logo.png",
+  "icon_dark": "https://midnight.security/logo-dark.png",
+  "icon_light": "https://midnight.security/logo-light.png",
+  "icon_dark_mode": true,
+  "icon_light_mode": true,
+  "icon_dark_mode_only": false,
+  "icon_light_mode_only": false
+}

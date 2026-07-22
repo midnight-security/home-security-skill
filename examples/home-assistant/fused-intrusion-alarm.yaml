@@ -1,0 +1,127 @@
+# Worked example accompanying skills/home-security-engineering/references/sensor-alarm-logic.md
+#
+# Implements the escalation ladder from that reference:
+#   1. Single low-confidence trip (interior motion only)        -> log only
+#   2. Single high-confidence trip (perimeter door while armed) -> notify + entry delay
+#   3. Two+ corroborating signals within N seconds               -> escalate, request video
+#   4. No valid disarm within the delay window                   -> alarm_control_panel.alarm_trigger
+#
+# Assumes:
+#   - alarm_control_panel.home (the built-in Alarm Control Panel integration, not a custom state machine)
+#   - binary_sensor.front_door, binary_sensor.hallway_motion (device_class: motion / door)
+#   - binary_sensor.frigate_person_detected (camera person-detection, see access-control-and-locks.md)
+#   - input_number.corroboration_window_seconds (per-install tuning value, see reference)
+#
+# This is a reference implementation to adapt, not a drop-in config — entity IDs, zone names,
+# and the corroboration window need to match the real install.
+
+template:
+  - binary_sensor:
+      - name: "Fused Intrusion Confidence"
+        unique_id: fused_intrusion_confidence
+        device_class: safety
+        state: >-
+          {% set door = is_state('binary_sensor.front_door', 'on') %}
+          {% set motion = is_state('binary_sensor.hallway_motion', 'on') %}
+          {% set person = is_state('binary_sensor.frigate_person_detected', 'on') %}
+          {# Two or more corroborating signals = fused/high-confidence, per sensor-alarm-logic.md #}
+          {{ [door, motion, person] | select('equalto', true) | list | count >= 2 }}
+
+automation:
+  - alias: "Security - low-confidence single sensor (log only)"
+    description: "Step 1 of the escalation ladder: one motion zone alone, armed or not, is logged but never dispatched."
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.hallway_motion
+        to: "on"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.fused_intrusion_confidence
+        state: "off"
+    action:
+      - service: logbook.log
+        data:
+          name: Security
+          message: "Single-sensor motion trip (hallway) — below fusion threshold, no alert sent"
+
+  - alias: "Security - high-confidence single sensor (notify + entry delay)"
+    description: "Step 2: a perimeter door trip while armed away starts the built-in entry delay instead of an immediate trigger."
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.front_door
+        to: "on"
+    condition:
+      - condition: state
+        entity_id: alarm_control_panel.home
+        state: "armed_away"
+    action:
+      - service: alarm_control_panel.alarm_arm_away
+        # re-affirms armed state so the panel's own entry-delay timer (configured on the
+        # alarm_control_panel integration, not reimplemented here) starts counting down
+        target:
+          entity_id: alarm_control_panel.home
+      - service: notify.mobile_app
+        data:
+          title: "Front door opened"
+          message: "Disarm within the entry delay window to cancel."
+
+  - alias: "Security - fused escalation (two+ corroborating signals)"
+    description: "Step 3: door + motion + camera person-detection within the tuned window escalates to a verified event and pulls a video clip before any dispatch-relevant timer starts."
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.fused_intrusion_confidence
+        to: "on"
+    condition:
+      - condition: state
+        entity_id: alarm_control_panel.home
+        state:
+          - "armed_away"
+          - "armed_home"
+    action:
+      - service: camera.snapshot
+        target:
+          entity_id: camera.front_door
+        data:
+          filename: "/config/www/security_events/{{ now().strftime('%Y%m%d_%H%M%S') }}.jpg"
+      - service: notify.mobile_app
+        data:
+          title: "Likely intrusion — corroborated"
+          message: "Two or more sensors agree. Review the attached snapshot before the alarm triggers."
+
+  - alias: "Security - trigger alarm on unresolved fused event"
+    description: "Step 4: if a fused event isn't cleared (disarmed) within the delay window, actually trigger the panel."
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.fused_intrusion_confidence
+        to: "on"
+        for:
+          seconds: !secret entry_delay_seconds
+    condition:
+      - condition: state
+        entity_id: alarm_control_panel.home
+        state:
+          - "armed_away"
+          - "armed_home"
+    action:
+      - service: alarm_control_panel.alarm_trigger
+        target:
+          entity_id: alarm_control_panel.home
+
+  - alias: "Security - sensor supervision (stale sensor alert)"
+    description: >-
+      Approximates RF supervision (see references/threat-modeling.md) for consumer hardware that
+      doesn't natively support heartbeat supervision: alerts if a sensor hasn't reported in 12h.
+    trigger:
+      - platform: state
+        entity_id:
+          - binary_sensor.front_door
+          - binary_sensor.hallway_motion
+        for:
+          hours: 12
+    action:
+      - service: notify.mobile_app
+        data:
+          title: "Sensor trouble"
+          message: >-
+            {{ trigger.to_state.attributes.friendly_name }} hasn't reported a state change in 12
+            hours — check battery/connectivity. This is a trouble condition, not a confirmed alarm.
