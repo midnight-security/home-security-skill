@@ -23,6 +23,7 @@ skills/home-security-engineering/
     sensor-alarm-logic.md
     dispatch-integration.md
     access-control-and-locks.md
+    crime-data-integration.md
 examples/home-assistant/
   fused-intrusion-alarm.yaml                         — worked automation implementing the sensor-fusion escalation ladder
 .github/workflows/validate.yml                       — CI: validates plugin.json, SKILL.md frontmatter, and example YAML
@@ -37,7 +38,7 @@ Every push and PR runs `.github/scripts/validate.py`, which checks: `plugin.json
 **As a Claude Code plugin** (recommended — Claude loads `SKILL.md` automatically and only reads a reference file when a request actually calls for it):
 
 ```
-claude plugin marketplace add josephrrusso/home-security-skill
+claude plugin marketplace add midnightsecurity/home-security-skill
 claude plugin install home-security-skill
 ```
 
@@ -45,7 +46,7 @@ claude plugin install home-security-skill
 
 ## Scope
 
-This skill is about designing and building *defensive* systems — sensor fusion, verified dispatch, access control, hardened architecture. It explicitly treats specific techniques for defeating a *named* real commercial product (lock-picking a specific cylinder, jamming a specific panel's RF frequency, relay-attack tooling for a specific lock) as out of scope; see the "Out of scope" section in each reference file.
+This skill is about designing and building *defensive* systems — sensor fusion, verified dispatch, access control, hardened architecture, responsibly-sourced risk data. It explicitly treats specific techniques for defeating a *named* real commercial product (lock-picking a specific cylinder, jamming a specific panel's RF frequency, relay-attack tooling for a specific lock) or for scraping/circumventing ToS on a named crime-data platform as out of scope; see the "Out of scope" section in each reference file.
 
 ## License
 
