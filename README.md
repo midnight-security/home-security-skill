@@ -16,7 +16,9 @@ Grounded in real industry standards (CSAA, SIA, UL 827/1023, NFPA 72, RapidSOS/N
 ## Structure
 
 ```
-.claude-plugin/plugin.json                          — plugin manifest
+.claude-plugin/
+  plugin.json                                        — plugin manifest
+  marketplace.json                                    — makes this repo installable via `/plugin marketplace add`
 skills/home-security-engineering/
   SKILL.md                                           — router: what to read for which kind of request
   references/
@@ -38,14 +40,34 @@ Every push and PR runs `.github/scripts/validate.py`, which checks: `plugin.json
 
 ## Install
 
-**As a Claude Code plugin** (recommended — Claude loads `SKILL.md` automatically and only reads a reference file when a request actually calls for it):
+Three ways to get this, depending on your setup. All three were tested end-to-end against this repo.
+
+**As a Claude Code plugin** — this repo is its own marketplace (`.claude-plugin/marketplace.json`), so no separate marketplace repo is needed:
 
 ```
 claude plugin marketplace add midnightsecurity/home-security-skill
-claude plugin install home-security-skill
+claude plugin install home-security-skill@home-security-skill
 ```
 
-**Manually**, for any tool that reads Anthropic-style skill folders: copy `skills/home-security-engineering/` into your tool's skills directory (for Claude Code, `~/.claude/skills/` for personal use, or a project's `.claude/skills/`).
+(or the interactive equivalents `/plugin marketplace add midnightsecurity/home-security-skill` and `/plugin install home-security-skill@home-security-skill` inside a Claude Code session). Claude then loads `SKILL.md` automatically and only reads a reference file when a request actually calls for it.
+
+**With [`npx skills`](https://github.com/vercel-labs/skills)** (works across 40+ agents, not just Claude Code):
+
+```
+npx skills add midnightsecurity/home-security-skill
+```
+
+This repo currently has one skill, so the plain form above resolves it automatically. If more skills are added later, target it explicitly with `npx skills add midnightsecurity/home-security-skill --skill home-security-engineering`. Add `-g` to install globally instead of into the current project, or `-a <agent>` to target a specific agent (e.g. `-a claude-code`).
+
+**Upload directly to claude.ai** (Settings → Capabilities → Skills accepts a `.zip`):
+
+```
+cd skills/home-security-engineering && zip -r ../../home-security-engineering.zip . -x '.DS_Store' && cd ../..
+```
+
+Upload the resulting `home-security-engineering.zip`.
+
+**Manually**, for any other tool that reads Agent Skills–format folders: copy `skills/home-security-engineering/` into that tool's skills directory.
 
 ## Scope
 

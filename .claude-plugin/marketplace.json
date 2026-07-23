@@ -1,0 +1,14 @@
+{
+  "name": "home-security-skill",
+  "owner": {
+    "name": "Midnight Security"
+  },
+  "description": "Domain expertise for building smart home security products: threat modeling, sensor/alarm logic, 911/NG911 dispatch integration, access control, neighborhood crime data, and Home Assistant alarm integration patterns.",
+  "plugins": [
+    {
+      "name": "home-security-skill",
+      "source": "./",
+      "category": "security"
+    }
+  ]
+}
